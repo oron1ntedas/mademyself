@@ -1,9 +1,8 @@
 # Imports
 import numpy as np
-import torch
 import pydraco as draco
 import logging
-from typing import Tuple, Optional, Dict
+from typing import Optional, Dict
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

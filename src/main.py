@@ -8,13 +8,12 @@ import trimesh
 from torch.utils.data import DataLoader
 
 # File Imports
-from postprocess.repair import MeshReconstructor
 from model import PointCloudVAE
 from train import train, plot_training_history # Импортируем функции из train.py
 from metrics import QualityEvaluator, VisualizationTools
 from preprocess.data import MeshData
 from preprocess.normalize import norm_pointcloud
-
+from postprocess.repair import MeshReconstructor
 
 def main(args):
     """Основная функция, которая запускает нужный режим работы."""

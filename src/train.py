@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt  # Библиотека для графиков
 import numpy as np
 
 #File imports
-from data import MeshData
+from preprocess.data import MeshData
 from model import PointCloudVAE
 
 

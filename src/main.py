@@ -5,15 +5,16 @@ import os
 from pathlib import Path
 import numpy as np
 import trimesh
+from torch.utils.data import DataLoader
 
 # File Imports
-# Предполагается, что все эти файлы находятся в том же каталоге
-from data import MeshData
+from postprocess.repair import MeshReconstructor
 from model import PointCloudVAE
 from train import train, plot_training_history # Импортируем функции из train.py
 from metrics import QualityEvaluator, VisualizationTools
-from normalize import norm_pointcloud
-from torch.utils.data import DataLoader
+from preprocess.data import MeshData
+from preprocess.normalize import norm_pointcloud
+
 
 def main(args):
     """Основная функция, которая запускает нужный режим работы."""
@@ -116,6 +117,21 @@ def main(args):
             _, reconstructed_pc, _, _ = model(damaged_pc.unsqueeze(0).to(device))
             reconstructed_pc = reconstructed_pc.squeeze(0).cpu().numpy()
         
+        mesh_reconstructor = MeshReconstructor()
+        
+        # Используем метод Пуассона ('poisson') или 'ball_pivoting'
+        # Вход: numpy array (reconstructed_pc)
+        reconstructed_o3d_mesh, info = mesh_reconstructor.pointcloud_to_mesh(
+            points=reconstructed_pc, 
+            method='poisson'
+        )
+        
+        # Преобразование o3d.geometry.TriangleMesh в trimesh для сохранения
+        reconstructed_trimesh = trimesh.Trimesh(
+            vertices=np.asarray(reconstructed_o3d_mesh.vertices),
+            faces=np.asarray(reconstructed_o3d_mesh.triangles)
+        )
+
         # Оценка качества
         evaluator = QualityEvaluator()
         report = evaluator.evaluate_reconstruction(
@@ -131,14 +147,15 @@ def main(args):
         output_dir = "test_results"
         os.makedirs(output_dir, exist_ok=True)
         
-        # Создаем trimesh объекты и сохраняем как .obj
+        # СОХРАНЯЕМ ВОССТАНОВЛЕННЫЙ МЕШ
+        reconstructed_trimesh.export(os.path.join(output_dir, "reconstructed_mesh.obj"))
+        
+        # Можно сохранить и другие для сравнения
         trimesh.Trimesh(vertices=damaged_pc.numpy()).export(os.path.join(output_dir, "damaged.obj"))
-        trimesh.Trimesh(vertices=reconstructed_pc).export(os.path.join(output_dir, "reconstructed.obj"))
         trimesh.Trimesh(vertices=normalized_pc.numpy()).export(os.path.join(output_dir, "original.obj"))
 
-        print(f"Результаты сохранены в папку '{output_dir}'.")
-        print("Вы можете импортировать .obj файлы из этой папки в Blender для просмотра.")
-
+        print(f"Результаты (включая **восстановленный меш**) сохранены в папку '{output_dir}'.")
+        
     else:
         print("Неизвестное действие. Используйте 'train', 'resume' или 'test_one'.")
 
